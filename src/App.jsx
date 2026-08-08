@@ -75,6 +75,7 @@ export default function App() {
   const [deliveryMode, setDeliveryMode] = useState('pickup');
   const [addrFullName, setAddrFullName] = useState('');
   const [addrFullNameError, setAddrFullNameError] = useState('');
+  const [addrStateError, setAddrStateError] = useState('');
   const [addrCountry, setAddrCountry] = useState('');
   const [addrLine1, setAddrLine1] = useState('');
   const [addrLine2, setAddrLine2] = useState('');
@@ -248,7 +249,7 @@ export default function App() {
   }
 
   function playSheetFeedback(type) {
-    setSheetFeedback(type);
+    setSheetFeedback((prev) => (prev === type ? prev : type));
   }
 
   function markComplete(key) {
@@ -326,14 +327,27 @@ export default function App() {
       const city = String(addrCity || '').trim();
       const state = String(stateCode || '').trim();
       const zip = String(addrZip || '').trim();
+      let hasFieldError = false;
       if (!name) {
         setAddrFullNameError('Please fill Full Name');
-        playSheetFeedback('error');
-        return;
+        hasFieldError = true;
+      } else {
+        setAddrFullNameError('');
       }
-      setAddrFullNameError('');
-      if (!country || !line1 || !city || !state || !zip) {
-        playSheetFeedback('error');
+      if (!state) {
+        setAddrStateError('Please fill State');
+        hasFieldError = true;
+      } else {
+        setAddrStateError('');
+      }
+      if (!country || !line1 || !city || !zip) {
+        hasFieldError = true;
+      }
+      if (hasFieldError) {
+        // Inline for name/state; overlay only when other fields are missing
+        if (name && state && (!country || !line1 || !city || !zip)) {
+          playSheetFeedback('error');
+        }
         return;
       }
       const line2 = String(addrLine2 || '').trim();
@@ -1195,7 +1209,7 @@ export default function App() {
                   <input type="text" className="checkout-input" placeholder="Enter city" value={addrCity} onChange={(e) => setAddrCity(e.target.value)} />
                   <div className="checkout-input-row">
                     <div>
-                      <label className="checkout-label">State</label>
+                      <label className="checkout-label">State <span className="checkout-required" aria-hidden="true">*</span></label>
                       <div className="sheet-select" ref={stateSelectRef}>
                         <div className={`sheet-select__wrap${stateMenuOpen ? ' is-open' : ''}`}>
                           <button
@@ -1235,6 +1249,7 @@ export default function App() {
                                     className={`sheet-select__option${stateCode === s.code ? ' is-selected' : ''}`}
                                     onClick={() => {
                                       setStateCode(s.code);
+                                      if (addrStateError) setAddrStateError('');
                                       setStateMenuOpen(false);
                                     }}
                                   >
@@ -1246,6 +1261,7 @@ export default function App() {
                           )}
                         </div>
                       </div>
+                      {addrStateError ? <p className="checkout-field-error">{addrStateError}</p> : null}
                     </div>
                     <div>
                       <label className="checkout-label">Zip Code</label>

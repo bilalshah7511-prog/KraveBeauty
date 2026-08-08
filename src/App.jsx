@@ -74,6 +74,7 @@ export default function App() {
 
   const [deliveryMode, setDeliveryMode] = useState('pickup');
   const [addrFullName, setAddrFullName] = useState('');
+  const [addrFullNameError, setAddrFullNameError] = useState('');
   const [addrCountry, setAddrCountry] = useState('');
   const [addrLine1, setAddrLine1] = useState('');
   const [addrLine2, setAddrLine2] = useState('');
@@ -325,7 +326,13 @@ export default function App() {
       const city = String(addrCity || '').trim();
       const state = String(stateCode || '').trim();
       const zip = String(addrZip || '').trim();
-      if (!name || !country || !line1 || !city || !state || !zip) {
+      if (!name) {
+        setAddrFullNameError('Please fill Full Name');
+        playSheetFeedback('error');
+        return;
+      }
+      setAddrFullNameError('');
+      if (!country || !line1 || !city || !state || !zip) {
         playSheetFeedback('error');
         return;
       }
@@ -1130,8 +1137,9 @@ export default function App() {
                 </div>
               ) : (
                 <div className="delivery-panel">
-                  <label className="checkout-label">Full Name</label>
-                  <input type="text" className="checkout-input" placeholder="John Doe" value={addrFullName} onChange={(e) => setAddrFullName(e.target.value)} />
+                  <label className="checkout-label">Full Name <span className="checkout-required" aria-hidden="true">*</span></label>
+                  <input type="text" className="checkout-input" placeholder="John Doe" value={addrFullName} onChange={(e) => { setAddrFullName(e.target.value); if (addrFullNameError) setAddrFullNameError(''); }} />
+                  {addrFullNameError ? <p className="checkout-field-error">{addrFullNameError}</p> : null}
                   <label className="checkout-label">Country or region</label>
                   <div className="country-select" ref={countrySelectRef}>
                     <div className={`country-select__wrap${countryMenuOpen ? ' is-open' : ''}`}>

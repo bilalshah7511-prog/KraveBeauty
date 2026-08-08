@@ -12,7 +12,7 @@ import {
   usStates,
 } from './data/product';
 import { useSafariDrawerLock, useSafariSheetLock } from './useSafariCheckoutViewport';
-import { clearSheetViewportLock } from './safariViewport';
+import { pinDeliveryInDrawer } from './safariViewport';
 import './base.css';
 import './index.css';
 
@@ -194,6 +194,16 @@ export default function App() {
   useSafariDrawerLock(cartDrawerRef, cartOpen || checkoutLoading);
   useSafariSheetLock(checkoutFlowRef, checkoutBackdropRef, cartDrawerRef, sheet);
 
+  // Re-pin delivery sheet after validate/re-render so desktop width never escapes the drawer
+  useEffect(() => {
+    if (sheet !== 'delivery') return undefined;
+    pinDeliveryInDrawer(checkoutFlowRef.current, checkoutBackdropRef.current);
+    const id = window.requestAnimationFrame(() => {
+      pinDeliveryInDrawer(checkoutFlowRef.current, checkoutBackdropRef.current);
+    });
+    return () => window.cancelAnimationFrame(id);
+  }, [sheet, addrFullNameError]);
+
   useEffect(() => {
     if (!selectedDate && dates[0]) setSelectedDate(dates[0]);
   }, [dates, selectedDate]);
@@ -310,11 +320,7 @@ export default function App() {
 
   function confirmDelivery() {
     // Desktop: prevent delivery sheet stretching to full viewport on validate
-    clearSheetViewportLock(
-      checkoutFlowRef.current,
-      checkoutBackdropRef.current,
-      cartDrawerRef.current,
-    );
+    pinDeliveryInDrawer(checkoutFlowRef.current, checkoutBackdropRef.current);
     if (deliveryMode === 'pickup') {
       if (!pickupChosen) {
         playSheetFeedback('error');
@@ -334,35 +340,17 @@ export default function App() {
       const city = String(addrCity || '').trim();
       const state = String(stateCode || '').trim();
       const zip = String(addrZip || '').trim();
-      let hasFieldError = false;
       if (!name) {
         setAddrFullNameError('Please fill Full Name');
-        hasFieldError = true;
-      } else {
-        setAddrFullNameError('');
-      }
-      if (!state) {
-        setAddrStateError('Please fill State');
-        hasFieldError = true;
-      } else {
-        setAddrStateError('');
-      }
-      if (!country || !line1 || !city || !zip) {
-        hasFieldError = true;
-      }
-      if (hasFieldError) {
-        // Never show sheet overlay here — it stretches the delivery form width
-        clearSheetViewportLock(
-          checkoutFlowRef.current,
-          checkoutBackdropRef.current,
-          cartDrawerRef.current,
-        );
+        pinDeliveryInDrawer(checkoutFlowRef.current, checkoutBackdropRef.current);
         return;
       }
+      setAddrFullNameError('');
+      setAddrStateError('');
       const line2 = String(addrLine2 || '').trim();
       const cityLine = [city, state].filter(Boolean).join(', ') + (zip ? ` ${zip}` : '');
       const addressText = [line1, line2, cityLine].filter(Boolean).join(', ');
-      setDeliveryStatus(`${name} · ${addressText}`);
+      setDeliveryStatus(addressText ? `${name} · ${addressText}` : name);
     }
     markComplete('delivery');
     setSheetFeedback(null);
@@ -1218,7 +1206,7 @@ export default function App() {
                   <input type="text" className="checkout-input" placeholder="Enter city" value={addrCity} onChange={(e) => setAddrCity(e.target.value)} />
                   <div className="checkout-input-row">
                     <div>
-                      <label className="checkout-label">State <span className="checkout-required" aria-hidden="true">*</span></label>
+                      <label className="checkout-label">State</label>
                       <div className="sheet-select" ref={stateSelectRef}>
                         <div className={`sheet-select__wrap${stateMenuOpen ? ' is-open' : ''}`}>
                           <button
@@ -1270,7 +1258,6 @@ export default function App() {
                           )}
                         </div>
                       </div>
-                      {addrStateError ? <p className="checkout-field-error">{addrStateError}</p> : null}
                     </div>
                     <div>
                       <label className="checkout-label">Zip Code</label>

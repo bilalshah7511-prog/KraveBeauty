@@ -318,6 +318,7 @@ export default function App() {
   }
 
   function confirmDelivery() {
+    // NAME_ONLY_DELIVERY_V2
     // Desktop: prevent delivery sheet stretching to full viewport on validate
     pinDeliveryInDrawer(checkoutFlowRef.current, checkoutBackdropRef.current);
     if (deliveryMode === 'pickup') {
@@ -1146,7 +1147,7 @@ export default function App() {
                 </div>
               ) : (
                 <div className="delivery-panel">
-                  <label className="checkout-label">Full Name <span className="checkout-required" aria-hidden="true">*</span></label>
+                  <label className="checkout-label">Full Name <span className="checkout-required checkout-name-required" aria-hidden="true">*</span></label>
                   <input type="text" className="checkout-input" placeholder="John Doe" value={addrFullName} onChange={(e) => { setAddrFullName(e.target.value); if (addrFullNameError) setAddrFullNameError(''); }} />
                   {addrFullNameError ? <p className="checkout-field-error">{addrFullNameError}</p> : null}
                   <label className="checkout-label">Country or region</label>
@@ -1268,6 +1269,7 @@ export default function App() {
             <button
               type="button"
               className="checkout-cta"
+              onPointerDown={() => pinDeliveryInDrawer(checkoutFlowRef.current, checkoutBackdropRef.current)}
               onClick={confirmDelivery}
             >
               {deliveryMode === 'pickup' ? 'Confirm Pickup' : 'Confirm Delivery'}
